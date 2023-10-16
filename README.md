@@ -1,6 +1,6 @@
 # Coffee Shop Rewards Program
 
-Welcome to the Coffee Shop Rewards Program! This project showcases a Java program that tracks customer orders and rewards loyal customers with discounts and bonus bucks. The program allows customers to earn points for each purchase and redeem them for rewards.
+Welcome to the Coffee Shop Rewards Program! This project demonstrates a Java-based rewards program for a coffee shop. The program tracks customer orders and rewards loyal customers with discounts and bonus bucks.
 
 ## Project Description
 
