@@ -76,8 +76,12 @@ public class Main {
         String type = "";
         float amount = (float)0.0;
         int quantity = 0;
+        int discount = 0;
+        boolean isUpgraded = false;
 
         Customer customer = null;
+        Gold newCustomerGold = null;
+        Platinum newCustomerPlat = null;
 
         while(filScanner.hasNextLine()){
             if(filScanner.hasNext()){
@@ -144,15 +148,48 @@ public class Main {
                 }
                 // If the customer is neither gold nor platinum, then its just a regular customer
                 else{
-                    if(cost >= 50){
+                    if(cost + customer.getAmount() >= 50 && cost + customer.getAmount() < 100){
+                        isUpgraded = true;
+                        discount = 5;
+                        // Apply the 5 percent discount to the cost
+                        cost = cost - (cost * (float)0.05);
+
                         // change the regular customer to a gold customer
-                        Gold newCustomer = new Gold(customer.getFirst(), customer.getLast(), customer.getID(), customer.getAmount(), 5);
+                        newCustomerGold = new Gold(customer.getFirst(), customer.getLast(), customer.getID(), customer.getAmount() + cost, discount);
+                    }
+                    else if(cost + customer.getAmount() >= 100 && cost + customer.getAmount() < 150){
+                        isUpgraded = true;
+                        discount = 10;
+                        // Apply the 10 percent discount to the cost
+                        cost = cost - (cost * (float)0.10);
+
+                        // change the regular customer to a gold customer
+                        newCustomerGold = new Gold(customer.getFirst(), customer.getLast(), customer.getID(), customer.getAmount() + cost, discount);
+                    }
+                    else if(cost + customer.getAmount() >= 150){
+                        isUpgraded = true;
+                        discount = 15;
+                        // Apply the 15 percent discount to the cost
+                        cost = cost - (cost * (float)0.15);
+
+                        // change the regular customer to a gold customer
+                        newCustomerGold = new Gold(customer.getFirst(), customer.getLast(), customer.getID(), customer.getAmount() + cost, discount);
+                    }
+                    else{
+                        // If the customer is not upgraded, then just add the cost to the amount spent
+                        customer.setAmount(customer.getAmount() + cost);
+                    }
+
+                    if(isUpgraded){
                         // remove the regular customer from the regular customer array
                         regularCustomers = removeCustomer(guestID, regularCustomers);
                         // add the gold customer to the preferred customer array
-                        preferredCustomers = addCustomer(newCustomer, preferredCustomers);
+                        preferredCustomers = addCustomer(newCustomerGold, preferredCustomers);
                     }
+
                 }
+
+                isUpgraded = false;
 
                 lineScanner.close();
             }
