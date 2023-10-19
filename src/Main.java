@@ -148,7 +148,9 @@ public class Main {
                         // change the regular customer to a gold customer
                         Gold newCustomer = new Gold(customer.getFirst(), customer.getLast(), customer.getID(), customer.getAmount(), 5);
                         // remove the regular customer from the regular customer array
-                        preferredCustomers = removeCustomer(guestID, preferredCustomers);
+                        regularCustomers = removeCustomer(guestID, regularCustomers);
+                        // add the gold customer to the preferred customer array
+                        preferredCustomers = addCustomer(newCustomer, preferredCustomers);
                     }
                 }
 
@@ -268,6 +270,15 @@ public class Main {
                 j++;
             }
         }
+        return newCustomers;
+    }
+    // Function to add a customer to the preferred customer array
+    public static Customer[] addCustomer(Customer customer, Customer[] preferredCustomers){
+        Customer[] newCustomers = new Customer[preferredCustomers.length + 1];
+        for(int i = 0; i < preferredCustomers.length; i++){
+            newCustomers[i] = preferredCustomers[i];
+        }
+        newCustomers[preferredCustomers.length] = customer;
         return newCustomers;
     }
     
