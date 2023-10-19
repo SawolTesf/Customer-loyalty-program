@@ -147,6 +147,8 @@ public class Main {
                     if(cost >= 50){
                         // change the regular customer to a gold customer
                         Gold newCustomer = new Gold(customer.getFirst(), customer.getLast(), customer.getID(), customer.getAmount(), 5);
+                        // remove the regular customer from the regular customer array
+                        preferredCustomers = removeCustomer(guestID, preferredCustomers);
                     }
                 }
 
@@ -255,6 +257,18 @@ public class Main {
             }
         }
         return customer;
+    }
+    // Function to remove a customer from customer arrays. This works for both regular and preferred customers
+    public static Customer[] removeCustomer(String guestID, Customer[] customers){
+        Customer[] newCustomers = new Customer[customers.length - 1];
+        int j = 0;
+        for(int i = 0; i < customers.length; i++){
+            if(!customers[i].getID().equals(guestID)){
+                newCustomers[j] = customers[i];
+                j++;
+            }
+        }
+        return newCustomers;
     }
     
     /* End of helper functions */
