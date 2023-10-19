@@ -71,38 +71,83 @@ public class Main {
     // Function to read in order file
     public static void readOrderFile(Scanner filScanner, Customer[] regularCustomers, Customer[] preferredCustomers){
         int lineNumber = 0;
+        String guestID = "";
+        Character size = ' ';
+        String type = "";
+        float amount = (float)0.0;
+        int quantity = 0;
+
+        Customer customer = null;
+
         while(filScanner.hasNextLine()){
             if(filScanner.hasNext()){
                 String line = filScanner.nextLine();
                 Scanner lineScanner = new Scanner(line); // Create a new scanner to read the line
 
                 lineNumber++;
-                if(lineScanner.hasNext()){
-                    String guestID = lineScanner.next();
-                    if(!checkIDCustomer(guestID, regularCustomers) && !checkIDPreferred(guestID, preferredCustomers)){
-                        System.out.println("Error on line " + lineNumber + ": Guest ID " + guestID + " not found.");
+                try{
+                    int guestIDInt = lineScanner.nextInt(); // Store the guest ID in an integer
+                    guestID = Integer.toString(guestIDInt); // Convert the guest ID to a string
+                    // Check if the guest ID exists in the regular customer arrays
+                    if(checkIDCustomer(guestID, regularCustomers)){
+                        customer = getRegular(guestID, regularCustomers);
                     }
-                }
-                else if(lineScanner.hasNext()){
-                    Character size = lineScanner.next().charAt(0);
+                    // Check if the guest ID exists in the preferred customer array
+                    else if(checkIDPreferred(guestID, regularCustomers)){
+                        customer = getPreferred(guestID, preferredCustomers);
+                    }
+                    // If the guest ID does not exist in either array, print an error message and continue
+                    else{
+                        System.out.println("Error on line " + lineNumber + ": Guest ID " + guestID + " not found.");
+                        continue;
+                    }                
+                    // Store the drink size in a character
+                    size = lineScanner.next().charAt(0);
                     if(!checkSize(size)){
                         System.out.println("Error on line " + lineNumber + ": Invalid size " + size + ".");
+                        continue;
                     }
-                }
-                else if(lineScanner.hasNextDouble()){
-                    Double amount = lineScanner.nextDouble();
+                    // Store the drink type in a string
+                    type = lineScanner.next();
+                    if(!checkDrinkType(type)){
+                        System.out.println("Error on line " + lineNumber + ": Invalid drink type " + type + ".");
+                        continue;
+                    }
+                    // Store the drink amount in a double
+                    amount = lineScanner.nextFloat();
                     if(amount < 0){
                         System.out.println("Error on line " + lineNumber + ": Invalid amount " + amount + ".");
+                        continue;
                     }
-                }
-                else if(lineScanner.hasNextInt()){
-                    int quantity = lineScanner.nextInt();
+                    // Store the drink quantity in an integer
+                    quantity = lineScanner.nextInt();
                     if(quantity < 0){
                         System.out.println("Error on line " + lineNumber + ": Invalid quantity " + quantity + ".");
                     }
                 }
-                else{
+                catch(InputMismatchException e){
                     System.out.println("Error on line " + lineNumber + ": Invalid input.");
+                    continue;
+                }
+                if(lineScanner.hasNext()){
+                    System.out.println("Error on line " + lineNumber + ": Too many inputs.");
+                    continue;
+                }
+
+                float cost = calcCost(size, type, amount, quantity); // Calculate the cost of the drink
+
+                if(customer instanceof Gold){
+
+                }
+                else if(customer instanceof Platinum){
+
+                }
+                // If the customer is neither gold nor platinum, then its just a regular customer
+                else{
+                    if(cost >= 50){
+                        // change the regular customer to a gold customer
+                        Gold newCustomer = new Gold(customer.getFirst(), customer.getLast(), customer.getID(), customer.getAmount(), 5);
+                    }
                 }
 
                 lineScanner.close();
@@ -134,6 +179,7 @@ public class Main {
         }
         return isFound;
     }
+    // Function to check if the drink size is valid
     public static Boolean checkSize(Character size){
         Boolean isFound = false;
         if(size.equals('S') || size.equals('M') || size.equals('L')){
@@ -141,7 +187,76 @@ public class Main {
         }
         return isFound;
     }
+    // Function to check if the drink type is valid
+    public static Boolean checkDrinkType(String type){
+        Boolean isFound = false;
+        if(type.equalsIgnoreCase("Soda") || type.equalsIgnoreCase("Tea") || type.equalsIgnoreCase("Punch")){
+            isFound = true;
+        }
+        return isFound;
+    }
 
+    // Function to calculate the cost of the drink
+    public static float calcCost(Character size, String type, float amount, int quantity){
+        float drinkPrice = (float)0.0, pricePerOz = (float)0.0, cupPrice = (float)0.0, cylinderSurfaceArea = (float)0.0;
+        int drinkOunce = 0;
+
+        if(type.equalsIgnoreCase("Soda")){
+            pricePerOz = (float)0.20;
+        }
+        else if(type.equalsIgnoreCase("Tea")){
+            pricePerOz = (float)0.12;
+        }
+        else if(type.equalsIgnoreCase("Punch")){
+            pricePerOz = (float)0.15;
+        }
+
+        if (size.compareTo('S') == 0 || size.compareTo('s') == 0) {
+            drinkOunce = 12;
+            cylinderSurfaceArea = (float)(4.0 * 4.5 * Math.PI); // 4.0 is the diameter and 4.5 is the height for a small cup
+        } 
+        else if (size.compareTo('M') == 0 || size.compareTo('m') == 0) {
+            drinkOunce = 20;
+            cylinderSurfaceArea = (float)(4.5 * 5.75 * Math.PI); // 4.5 is the diameter and 5.75 is the height for a medium cup
+        } 
+        else if (size.compareTo('L') == 0 || size.compareTo('l') == 0) {
+            drinkOunce = 32;
+            cylinderSurfaceArea = (float)(5.5 * 7.0 * Math.PI);
+        }
+
+        drinkPrice = pricePerOz * drinkOunce; // Calculate the price of the drink
+        
+        // Calculate the price of the cup
+        cupPrice = cylinderSurfaceArea * amount;
+
+        float totalDrinkPrice = cupPrice + drinkPrice;
+
+        // Finally, the price is price per drink multiplied by the quantity
+        return totalDrinkPrice * quantity;
+    }
+    // Function to get the regular customer object
+    public static Customer getRegular(String guestID, Customer[] regularCustomers){
+        Customer customer = null;
+        for(int i = 0; i < regularCustomers.length; i++){
+            if(regularCustomers[i].getID().equals(guestID)){
+                customer = regularCustomers[i];
+                break;
+            }
+        }
+        return customer;
+    }
+    // Function to get the preferred customer object
+    public static Customer getPreferred(String guestID, Customer[] preferredCustomers){
+        Customer customer = null;
+        for(int i = 0; i < preferredCustomers.length; i++){
+            if(preferredCustomers[i].getID().equals(guestID)){
+                customer = preferredCustomers[i];
+                break;
+            }
+        }
+        return customer;
+    }
+    
     /* End of helper functions */
     public static void main(String[] args) throws Exception {
         // Variable declarations
@@ -166,19 +281,10 @@ public class Main {
 
         try{
             // Read in the regular customer file
-            File regualrFile = new File(regularCustomerFileName);
-            inputStream = new FileInputStream(regualrFile);
+            File regularFile = new File(regularCustomerFileName);
+            inputStream = new FileInputStream(regularFile);
             fileScanner = new Scanner(inputStream);
             regularCustomers = readRegularCustomerFile(fileScanner, regularCustomers);
-
-            // Test the contents of the array
-            System.out.println("Regular Customers:");
-            for(int i = 0; i < regularCustomers.length; i++){
-                Customer customer = regularCustomers[i];
-                System.out.println(customer.getFirst() + " " + customer.getLast() + " " + customer.getID() + " " + customer.getAmount());
-            }
-            System.out.println("Length: " + regularCustomers.length);
-            
         }
         catch(FileNotFoundException e){
             System.out.println("Regular customer file not found.");
@@ -194,24 +300,6 @@ public class Main {
                 inputStream = new FileInputStream(preferredFile);
                 fileScanner = new Scanner(inputStream);
                 preferredCustomers = readPreferredCustomerFile(fileScanner, preferredCustomers);
-
-                // Test the contents of the array
-                System.out.println("Preferred Customers:");
-                for(int i = 0; i < preferredCustomers.length; i++){
-                    Customer customer = preferredCustomers[i];
-
-                    // Check if the customer is gold or platinum
-                    if(customer instanceof Gold){
-                        Gold goldCustomer = (Gold) customer;
-                        System.out.println("Customer type: Gold" + " " + goldCustomer.getFirst() + " " + goldCustomer.getLast() + " " + goldCustomer.getID() + " " + goldCustomer.getAmount() + " " + goldCustomer.getDiscount() + "%");
-                    }
-                    else{
-                        Platinum platinumCustomer = (Platinum) customer;
-                        System.out.println("Customer type: Platinum" + " " + platinumCustomer.getFirst() + " " + platinumCustomer.getLast() + " " + platinumCustomer.getID() + " " + platinumCustomer.getAmount() + " " + platinumCustomer.getBonusBucks());
-                    }
-                }
-                System.out.println("Length: " + preferredCustomers.length);
-
             }
             catch(FileNotFoundException e){
                 System.out.println("Preferred customer file not found.");
