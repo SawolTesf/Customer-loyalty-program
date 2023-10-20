@@ -93,6 +93,9 @@ public class Main {
         while(filScanner.hasNextLine()){
             if(filScanner.hasNext()){
                 String line = filScanner.nextLine();
+                if(line.isEmpty()){
+                    continue;
+                }
                 Scanner lineScanner = new Scanner(line); // Create a new scanner to read the line
 
                 lineNumber++;
@@ -154,7 +157,7 @@ public class Main {
 
                 if(customer instanceof Gold){
                     // Calculate the new total spent after applying the current discount
-                    double newTotalSpent = customer.getAmount() + cost * (1 - ((Gold)customer).getDiscount() / 100.0);
+                    double newTotalSpent = customer.getAmount() + cost - (cost * ((Gold)customer).getDiscount() / 100);
                     
                     // Check if the new total spent reaches the thresholds for increasing discount or promoting to Platinum
                     if(newTotalSpent >= 200){
@@ -168,7 +171,13 @@ public class Main {
                         // Increase the discount to 10%
                         ((Gold)customer).setDiscount(10);
                     }
-                } else if(customer instanceof Platinum){
+                    // If the new total spent does not reach any thresholds, then just update the total spent
+                    else{
+                        customer.setAmount(newTotalSpent);
+                        preferredCustomers = replaceCustomer(customer, preferredCustomers);
+                    }
+                } 
+                else if(customer instanceof Platinum){
                     // Calculate the new total spent and bonus bucks
                     double newTotalSpent = customer.getAmount() + cost;
                     int newBonusBucks = ((Platinum)customer).getBonusBucks() + (int)((newTotalSpent - 200) / 5);
