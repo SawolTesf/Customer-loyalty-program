@@ -2,7 +2,7 @@
 public class Platinum extends Customer{
     int bonusBucks;
 
-    public Platinum(String fn, String ln, String gi, double as, int bb){
+    public Platinum(String fn, String ln, String gi, float as, int bb){
         super(fn, ln, gi, as);
         bonusBucks = bb;
     }

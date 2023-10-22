@@ -4,9 +4,9 @@ public class Customer {
     protected String firstName;
     protected String lastName;
     protected String GuestID;
-    protected Double AmountSpent;
+    protected float AmountSpent;
 
-    Customer(String fn, String ln, String gi, Double as){
+    Customer(String fn, String ln, String gi, float as){
         firstName = fn;
         lastName = ln;
         GuestID = gi;
@@ -34,10 +34,10 @@ public class Customer {
         GuestID = gi;
     }
     
-    public Double getAmount(){
+    public float getAmount(){
         return AmountSpent;
     }
-    public void setAmount(Double as){
+    public void setAmount(float as){
         AmountSpent = as;
     }
 }
