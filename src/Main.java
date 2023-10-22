@@ -8,12 +8,17 @@ public class Main {
     public static Customer[] readRegularCustomerFile(Scanner fileScanner, Customer[] regularCustomers){
         int i = 0;
         while(fileScanner.hasNextLine()){
-            if(fileScanner.hasNext()){
+            String line = fileScanner.nextLine();
+            if(line.isEmpty()){
+                continue;
+            }
+            Scanner lineScanner = new Scanner(line);
+            if(lineScanner.hasNext()){
                 // Read in the customer information
-                String guestID = fileScanner.next();
-                String firstName = fileScanner.next();
-                String lastName = fileScanner.next();
-                Double amountSpent = fileScanner.nextDouble();
+                String guestID = lineScanner.next();
+                String firstName = lineScanner.next();
+                String lastName = lineScanner.next();
+                float amountSpent = lineScanner.nextFloat();
 
                 Customer newCustomer = new Customer(firstName, lastName, guestID, amountSpent); // Create a new customer object
 
@@ -25,6 +30,7 @@ public class Main {
                 regularCustomers[i] = newCustomer;
                 i++;
             }
+            lineScanner.close();
         }
         return regularCustomers;
     }
@@ -34,12 +40,17 @@ public class Main {
         boolean isGold = false;
         int i = 0;
         while(fileScanner.hasNextLine()){
-            if(fileScanner.hasNext()){
-                String guestID = fileScanner.next();
-                String firstName = fileScanner.next();
-                String lastName = fileScanner.next();
-                Double amountSpent = fileScanner.nextDouble();
-                String next = fileScanner.next();
+            String line = fileScanner.nextLine();
+            if(line.isEmpty()){
+                continue;
+            }
+            Scanner lineScanner = new Scanner(line);
+            if(lineScanner.hasNext()){
+                String guestID = lineScanner.next();
+                String firstName = lineScanner.next();
+                String lastName = lineScanner.next();
+                float amountSpent = lineScanner.nextFloat();
+                String next = lineScanner.next();
 
                 if(preferredCustomers == null){
                     preferredCustomers = new Customer[1];
@@ -64,15 +75,13 @@ public class Main {
                 i++;
                 isGold = false;
             }
+            lineScanner.close();
         }
         return preferredCustomers;
     }
 
     // Function to read in order file
     public static Customer[][] readOrderFile(Scanner filScanner, Customer[] regularCustomers, Customer[] preferredCustomers){
-
-        int lineNumber = 0; // Keep track of the line number for when an error occurs
-
         // Variable declarations for customer information
         String guestID = "";
         Character size = ' ';
@@ -98,16 +107,15 @@ public class Main {
                 }
                 Scanner lineScanner = new Scanner(line); // Create a new scanner to read the line
 
-                lineNumber++;
                 try{
                     int guestIDInt = lineScanner.nextInt(); // Store the guest ID in an integer
-                    guestID = Integer.toString(guestIDInt); // Convert the guest ID to a string
+                   guestID = Integer.toString(guestIDInt); // Convert the guest ID to a string
                     // Check if the guest ID exists in the regular customer arrays
                     if(checkIDCustomer(guestID, regularCustomers)){
                         customer = getRegular(guestID, regularCustomers);
                     }
                     // Check if the guest ID exists in the preferred customer array
-                    else if(checkIDPreferred(guestID, preferredCustomers)){
+                    else if(preferredCustomers != null && checkIDPreferred(guestID, preferredCustomers)){
                         if(getPreferred(guestID, preferredCustomers) instanceof Gold){
                             customer = (Gold)getPreferred(guestID, preferredCustomers);
                         }
@@ -115,41 +123,38 @@ public class Main {
                             customer = (Platinum)getPreferred(guestID, preferredCustomers);
                         }
                     }
-                    // If the guest ID does not exist in either array, print an error message and continue
+                    // Skip the current line if the guest ID does not exist in either array
                     else{
-                        System.out.println("Error on line " + lineNumber + ": Guest ID " + guestID + " not found.");
                         continue;
                     }                
                     // Store the drink size in a character
                     size = lineScanner.next().charAt(0);
                     if(!checkSize(size)){
-                        System.out.println("Error on line " + lineNumber + ": Invalid size " + size + ".");
-                        continue;
+                        continue; // Skip the current line if the size is invalid
                     }
                     // Store the drink type in a string
                     type = lineScanner.next();
                     if(!checkDrinkType(type)){
-                        System.out.println("Error on line " + lineNumber + ": Invalid drink type " + type + ".");
-                        continue;
+                        continue; // Skip the current line if the drink type is invalid
                     }
                     // Store the drink amount in a double
                     amount = lineScanner.nextFloat();
                     if(amount < 0){
-                        System.out.println("Error on line " + lineNumber + ": Invalid amount " + amount + ".");
-                        continue;
+                        continue; // Skip the current line if the drink amount is invalid
                     }
                     // Store the drink quantity in an integer
                     quantity = lineScanner.nextInt();
                     if(quantity < 0){
-                        System.out.println("Error on line " + lineNumber + ": Invalid quantity " + quantity + ".");
+                        continue; // Skip the current line if the quantity is invalid
+                    }
+                    if(lineScanner.hasNext()){
+                        continue; // Skip the current line if there is more than 5 tokens
                     }
                 }
                 catch(InputMismatchException e){
-                    System.out.println("Error on line " + lineNumber + ": Invalid input.");
                     continue;
                 }
-                if(lineScanner.hasNext()){
-                    System.out.println("Error on line " + lineNumber + ": Too many inputs.");
+                catch(NoSuchElementException e){
                     continue;
                 }
 
@@ -157,36 +162,63 @@ public class Main {
 
                 if(customer instanceof Gold){
                     // Calculate the new total spent after applying the current discount
-                    double newTotalSpent = customer.getAmount() + cost - (cost * ((Gold)customer).getDiscount() / 100);
+                    float newTotalSpent = ((Gold)customer).getAmount() + (cost - (cost * ((Gold)customer).getDiscount() / 100));
                     
                     // Check if the new total spent reaches the thresholds for increasing discount or promoting to Platinum
                     if(newTotalSpent >= 200){
+                        // Calculate the bonus bucks
+                        int bonusBucks = (int)((newTotalSpent - 200) / 5);
+                        
                         // Promote the customer to Platinum status
-                        newCustomerPlat = new Platinum(customer.getFirst(), customer.getLast(), customer.getID(), newTotalSpent, 0);
+                        newCustomerPlat = new Platinum(customer.getFirst(), customer.getLast(), guestID, newTotalSpent, bonusBucks);
+                        
                         preferredCustomers = replaceCustomer(newCustomerPlat, preferredCustomers);
-                    } else if(newTotalSpent >= 150){
+                    }
+                    else if(newTotalSpent >= 150){
                         // Increase the discount to 15%
                         ((Gold)customer).setDiscount(15);
-                    } else if(newTotalSpent >= 100){
-                        // Increase the discount to 10%
-                        ((Gold)customer).setDiscount(10);
-                    }
-                    // If the new total spent does not reach any thresholds, then just update the total spent
-                    else{
-                        customer.setAmount(newTotalSpent);
-                        preferredCustomers = replaceCustomer(customer, preferredCustomers);
-                    }
+                        
+                         // Update total amount spent
+                         ((Gold)customer).setAmount(newTotalSpent);
+                         
+                         preferredCustomers = replaceCustomer(customer, preferredCustomers);
+                    } 
+                    else if(newTotalSpent >= 100){
+                         // Increase the discount to 10%
+                         ((Gold)customer).setDiscount(10);
+                
+                         // Update total amount spent
+                         ((Gold)customer).setAmount(newTotalSpent);
+                
+                         preferredCustomers = replaceCustomer(customer, preferredCustomers);
+                     }
+                     else{
+                         // If no thresholds are reached, just update total amount spent
+                         ((Gold)customer).setAmount(newTotalSpent);
+                
+                         preferredCustomers = replaceCustomer(customer, preferredCustomers);
+                     }
                 } 
                 else if(customer instanceof Platinum){
                     // Calculate the new total spent and bonus bucks
-                    double newTotalSpent = customer.getAmount() + cost;
-                    int newBonusBucks = ((Platinum)customer).getBonusBucks() + (int)((newTotalSpent - 200) / 5);
-                    
-                    // Update the total spent and bonus bucks
-                    customer.setAmount(newTotalSpent);
-                    ((Platinum)customer).setBonusBucks(newBonusBucks);
-                }
+                    float newTotalSpent = 0;
+                    int newBonusBucks = (int)(cost / 5); // Calculate the bonus bucks (1 bonus buck for every $5 spent
+
+                    // Apply the bonus bucks to the cost
+                    while(cost > 0 && ((Platinum)customer).getBonusBucks() > 0){
+                        // Apply the bonus bucks to the cost
+                        cost = cost - 1;
+                        ((Platinum)customer).setBonusBucks(((Platinum)customer).getBonusBucks() - 1);
+                    }
+
+
+                    newTotalSpent = ((Platinum)customer).getAmount() + cost;
+                    int totalBonusBucks = ((Platinum)customer).getBonusBucks() + newBonusBucks;
                 
+                    // Update the total spent and bonus bucks
+                    ((Platinum)customer).setAmount(newTotalSpent);
+                    ((Platinum)customer).setBonusBucks(totalBonusBucks);
+                }
                 // If the customer is neither gold nor platinum, then its just a regular customer
                 else{
                     if(cost + customer.getAmount() >= 50 && cost + customer.getAmount() < 100){
@@ -207,7 +239,7 @@ public class Main {
                         // change the regular customer to a gold customer
                         newCustomerGold = new Gold(customer.getFirst(), customer.getLast(), customer.getID(), customer.getAmount() + cost, discount);
                     }
-                    else if(cost + customer.getAmount() >= 150){
+                    else if(cost + customer.getAmount() >= 150 && cost + customer.getAmount() < 200){
                         isUpgraded = true;
                         discount = 15;
                         // Apply the 15 percent discount to the cost
@@ -216,19 +248,33 @@ public class Main {
                         // change the regular customer to a gold customer
                         newCustomerGold = new Gold(customer.getFirst(), customer.getLast(), customer.getID(), customer.getAmount() + cost, discount);
                     }
+                    else if(cost + customer.getAmount() >= 200){
+                        isUpgraded = true;
+                        int bonusBucks = (int)((cost + customer.getAmount() - 200) / 5);
+                        // change the regular customer to a platinum customer
+                        newCustomerPlat = new Platinum(customer.getFirst(), customer.getLast(), customer.getID(), cost + customer.getAmount(), bonusBucks);
+                    }
                     else{
                         // If the customer is not upgraded, then just add the cost to the amount spent
                         customer.setAmount(customer.getAmount() + cost);
                         regularCustomers = replaceCustomer(customer, regularCustomers);
                     }
-
                     if(isUpgraded){
                         // remove the regular customer from the regular customer array
                         regularCustomers = removeCustomer(guestID, regularCustomers);
-                        // add the gold customer to the preferred customer array
-                        preferredCustomers = addCustomer(newCustomerGold, preferredCustomers);
+                        
+                        if(newCustomerGold != null){
+                            // add the gold customer to the preferred customer array
+                            preferredCustomers = addCustomer(newCustomerGold, preferredCustomers);
+                            newCustomerGold = null;
+                        }
+                        
+                        if(newCustomerPlat != null){
+                            // add the platinum customer to the preferred customers array
+                            preferredCustomers = addCustomer(newCustomerPlat, preferredCustomers);
+                            newCustomerPlat = null;
+                        }
                     }
-
                 }
 
                 isUpgraded = false;
@@ -257,6 +303,9 @@ public class Main {
     // Function to check if the guest ID exists in the customer arrays
     public static Boolean checkIDPreferred(String guestID, Customer[] preferredCustomers){
         Boolean isFound = false;
+        if(preferredCustomers == null){
+            return isFound;
+        }
         for(int i = 0; i < preferredCustomers.length; i++){
             Customer customer = preferredCustomers[i];
             if(customer.getID().equals(guestID)){
@@ -419,7 +468,7 @@ public class Main {
         // Check if the preferred customer file exists
         if(preferredFile.exists() && preferredFile.length() > 0){
             try{
-                preferredCustomers = new Customer[0]; // Initialize the array to avoid null pointer exceptions
+                preferredCustomers = new Customer[1]; // Initialize the array to avoid null pointer exceptions
                 // Read in the preferred customer file
                 inputStream = new FileInputStream(preferredFile);
                 fileScanner = new Scanner(inputStream);
